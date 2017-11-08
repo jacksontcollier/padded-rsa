@@ -36,9 +36,17 @@ typedef struct rsa_key
   BIGNUM* d;
   BIGNUM* e;
   BIGNUM* N;
-} RSAKey
+} RSAKey;
 
 RSAKey* new_RSAKey();
 
+void free_RSAKey(RSAKey* rsa_key);
+
 RSAKey* gen_RSAKey(int num_bits);
+
+BIGNUM* calc_phi_N(const BIGNUM* p, const BIGNUM* q, BN_CTX* bn_ctx);
+
+int calc_d(BIGNUM* d, const BIGNUM* e, const BIGNUM* phi_N, BN_CTX* bn_ctx);
+
+void print_openssl_err_and_exit();
 #endif
