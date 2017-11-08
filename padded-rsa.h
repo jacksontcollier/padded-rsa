@@ -1,6 +1,8 @@
 #ifndef PADDEDRSA_H
 #define PADDEDRSA_H
 
+#include <openssl/bn.h>
+
 typedef struct rsa_enc_dec_options
 {
   char* key_file;
@@ -29,4 +31,14 @@ RSAKeygenOptions* parse_RSAKeygenOptions(const int argc, char * const argv[]);
 
 void print_RSAKeygenOptions(const RSAKeygenOptions* options);
 
+typedef struct rsa_key
+{
+  BIGNUM* d;
+  BIGNUM* e;
+  BIGNUM* N;
+} RSAKey
+
+RSAKey* new_RSAKey();
+
+RSAKey* gen_RSAKey(int num_bits);
 #endif

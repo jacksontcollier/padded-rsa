@@ -107,3 +107,23 @@ void print_RSAKeygenOptions(const RSAKeygenOptions* options)
   printf("number of bits: %ld\n", options->num_bits);
 }
 
+RSAKey* new_RSAKey()
+{
+  RSAKey* rsa_key = malloc(sizeof(RSAKey));
+
+  rsa_key->d = BN_new();
+  rsa_key->e = BN_new();
+  rsa_key->N = BN_new();
+
+  return rsa_key;
+}
+
+RSAKey* gen_RSAKey(int num_bits)
+{
+  RSAKey* rsa_key = new_RSAKey();
+  BIGNUM* p = BN_new();
+  BIGNUM* q = BN_new();
+
+  BN_generate_prime_ex(p, num_bits, //
+}
+
