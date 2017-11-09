@@ -1,5 +1,6 @@
 CC = gcc
-CFLAGS = -Wall
+CFLAGS = -Wall -g
+LFLAGS = -lssl -lcrypto
 TARGET_EXE = rsa-enc rsa-dec rsa-keygen
 
 .PHONY: all
@@ -10,13 +11,13 @@ clean:
 	rm -rf rsa-enc rsa-dec rsa-keygen *.o
 
 rsa-enc: rsa-enc.o padded-rsa.o
-	$(CC) rsa-enc.o padded-rsa.o -o rsa-enc
+	$(CC) rsa-enc.o padded-rsa.o $(LFLAGS) -o rsa-enc
 
 rsa-dec: rsa-dec.o padded-rsa.o
-	$(CC) rsa-dec.o padded-rsa.o -o rsa-dec
+	$(CC) rsa-dec.o padded-rsa.o $(LFLAGS) -o rsa-dec
 
 rsa-keygen: rsa-keygen.o padded-rsa.o
-	$(CC) rsa-keygen.o padded-rsa.o -o rsa-keygen
+	$(CC) rsa-keygen.o padded-rsa.o $(LFLAGS) -o rsa-keygen
 
 rsa-enc.o: rsa-enc.c padded-rsa.h
 	$(CC) -c $(CFLAGS) rsa-enc.c -o rsa-enc.o
