@@ -6,8 +6,8 @@
 
 #include <openssl/err.h>
 
-const char* rsa_enc_dec_arg_options = "k:i:o";
-const char* rsa_keygen_arg_options = "p:s:n";
+const char* rsa_enc_dec_arg_options = "k:i:o:";
+const char* rsa_keygen_arg_options = "p:s:n:";
 
 
 RSAEncDecOptions* new_RSAEncDecOptions()
@@ -46,7 +46,7 @@ RSAEncDecOptions* parse_RSAEncDecOptions(const int argc, char * const argv[])
 
   if (rsa_options->key_file == NULL || rsa_options->in_file == NULL ||
       rsa_options->out_file == NULL) {
-    fprintf(stderr, "-k -i -o options are reqquired\n");
+    fprintf(stderr, "-k -i -o options are required\n");
     exit(1);
   }
 
@@ -86,7 +86,7 @@ RSAKeygenOptions* parse_RSAKeygenOptions(const int argc, char * const argv[])
         keygen_options->secret_key_file = optarg;
         break;
       case 'n':
-        sscanf(optarg, "%ld", &keygen_options->num_bits);
+        sscanf(optarg, "%ld", &(keygen_options->num_bits));
         break;
       default:
         fprintf(stderr, "Unknown command line option\n");
@@ -119,6 +119,7 @@ RSAKey* new_RSAKey()
   rsa_key->d = BN_new();
   rsa_key->e = BN_new();
   rsa_key->N = BN_new();
+  rsa_key->num_bits = 0;
 
   if (!rsa_key->d || !rsa_key->e || !rsa_key->N) {
     goto handle_new_RSAKey_error;
@@ -159,6 +160,8 @@ RSAKey* gen_RSAKey(int num_bits)
     goto handle_gen_RSAKey_error;
   }
 
+  rsa_key->num_bits = (unsigned long) num_bits;
+
   if (!BN_generate_prime_ex(p, num_bits / 2, 0, NULL, NULL, NULL) ||
       !BN_generate_prime_ex(q, num_bits / 2, 0, NULL, NULL, NULL)) {
     goto handle_gen_RSAKey_error;
@@ -185,6 +188,14 @@ RSAKey* gen_RSAKey(int num_bits)
     if (bn_ctx) BN_CTX_free(bn_ctx);
     if (phi_N) BN_clear_free(phi_N);
     return NULL;
+}
+
+void print_RSAKey(FILE* fout, unsigned long num_bits, const char* N,
+                  const char* key)
+{
+  fprintf(fout, "%ld\n", num_bits);
+  fprintf(fout, "%s\n", N);
+  fprintf(fout, "%s\n", key);
 }
 
 BIGNUM* calc_phi_N(const BIGNUM* p, const BIGNUM* q, BN_CTX* bn_ctx)

@@ -36,6 +36,7 @@ typedef struct rsa_key
   BIGNUM* d;
   BIGNUM* e;
   BIGNUM* N;
+  unsigned long num_bits;
 } RSAKey;
 
 RSAKey* new_RSAKey();
@@ -43,6 +44,9 @@ RSAKey* new_RSAKey();
 void free_RSAKey(RSAKey* rsa_key);
 
 RSAKey* gen_RSAKey(int num_bits);
+
+void print_RSAKey(FILE* fout, unsigned long num_bits, const char* N,
+                  const char* key);
 
 BIGNUM* calc_phi_N(const BIGNUM* p, const BIGNUM* q, BN_CTX* bn_ctx);
 
