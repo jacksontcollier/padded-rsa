@@ -52,5 +52,9 @@ BIGNUM* calc_phi_N(const BIGNUM* p, const BIGNUM* q, BN_CTX* bn_ctx);
 
 int calc_d(BIGNUM* d, const BIGNUM* e, const BIGNUM* phi_N, BN_CTX* bn_ctx);
 
+BIGNUM* generate_r(unsigned long num_bits);
+
+BIGNUM* padded_rsa_encrypt(BIGNUM* m, BIGNUM* N, BIGNUM* e);
+
 void print_openssl_err_and_exit();
 #endif

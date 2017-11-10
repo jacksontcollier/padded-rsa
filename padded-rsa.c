@@ -231,6 +231,56 @@ int calc_d(BIGNUM* d, const BIGNUM* e, const BIGNUM* phi_N, BN_CTX* bn_ctx)
   return BN_mod_inverse(d, e, phi_N, bn_ctx) != NULL;
 }
 
+BIGNUM* generate_r(unsigned long r_num_bits)
+{
+  int r_contains_zero_byte = 1;
+  BIGNUM* r = BN_new();
+  unsigned long bytes_in_r = r_num_bits / 8;
+  unsigned char* bytes_r = malloc(bytes_in_r);
+
+  while (r_contains_zero_byte) {
+    BN_generate_prime_ex(r, r_num_bits, 0, NULL, NULL, NULL);
+    BN_bn2bin(r, bytes_r);
+    r_contains_zero_byte = 0;
+    for (int i = 0; i < bytes_in_r; i++) {
+      if (bytes_r[i] == 0) {
+        r_contains_zero_byte = 1;
+      }
+    }
+  }
+
+  return r;
+}
+
+BIGNUM* padded_rsa_encrypt(BIGNUM* m, BIGNUM* N, BIGNUM* e, unsigned long num_bits)
+{
+  size_t encryption_element_byte_len = num_bits / sizeof(char);
+  size_t r_bit_len = num_bits / 2;
+  unsigned char *encryption_element_bytes = malloc(padded_message_byte_len);
+
+  encryption_element_bytes[0] = 0;
+  encryption_element_bytes[1] = 2;
+
+  BIGNUM* r = generate_r(r_bit_len);
+  size_t bytes_in_r = r_bit_len / 8;
+  unsigned char* r_bytes = malloc(bytes_in_r);
+  BN_bn2bin(r, r_bytes);
+
+  memcpy((void *) &encryption_element_bytes[2], r_bytes, bytes_in_r);
+
+  encryption_element_bytes[2 + bytes_in_r] = 0;
+
+  if (BN_num_bits(m) < (num_bits / 2) - (sizeof(char) * 3)) {
+    // pad m
+  }
+  memcpy((void *) &padded_message_bits[(2+1) + bytes_in_r], m_bytes, bytes_in_m);
+
+  //convert encryption_element_bytes to bn
+  //perform multiplication mod N
+
+  //return ciphertext_bn
+}
+
 void print_openssl_err_and_exit()
 {
   fprintf(stderr, "%s\n", ERR_error_string(ERR_get_error(), NULL));
