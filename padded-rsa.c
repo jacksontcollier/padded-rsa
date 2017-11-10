@@ -252,33 +252,66 @@ BIGNUM* generate_r(unsigned long r_num_bits)
   return r;
 }
 
-BIGNUM* padded_rsa_encrypt(BIGNUM* m, BIGNUM* N, BIGNUM* e, unsigned long num_bits)
+BIGNUM* padded_rsa_encrypt(BIGNUM* m, BIGNUM* N, BIGNUM* e,
+                           unsigned long num_bits)
 {
-  size_t encryption_element_byte_len = num_bits / sizeof(char);
   size_t r_bit_len = num_bits / 2;
-  unsigned char *encryption_element_bytes = malloc(padded_message_byte_len);
+  size_t m_required_bit_len = (num_bits / 2) - 24;
+  BIGNUM* enc_element = NULL;
+  BIGNUM* ciphertext = NULL;
+  BIGNUM* r = NULL;
+  BN_CTX* bn_ctx = NULL;
 
-  encryption_element_bytes[0] = 0;
-  encryption_element_bytes[1] = 2;
-
-  BIGNUM* r = generate_r(r_bit_len);
-  size_t bytes_in_r = r_bit_len / 8;
-  unsigned char* r_bytes = malloc(bytes_in_r);
-  BN_bn2bin(r, r_bytes);
-
-  memcpy((void *) &encryption_element_bytes[2], r_bytes, bytes_in_r);
-
-  encryption_element_bytes[2 + bytes_in_r] = 0;
-
-  if (BN_num_bits(m) < (num_bits / 2) - (sizeof(char) * 3)) {
-    // pad m
+  /* allocate encryption element and zero initialize (0x00) */
+  enc_element = BN_new();
+  if (!enc_element || !BN_zero(enc_element)) {
+    goto handle_padded_rsa_encrypt_error;
   }
-  memcpy((void *) &padded_message_bits[(2+1) + bytes_in_r], m_bytes, bytes_in_m);
 
-  //convert encryption_element_bytes to bn
-  //perform multiplication mod N
+  /* append 0x02 to encryption element */
+  if (!BN_lshift(enc_element, enc_element, 8) || BN_add_word(enc_element, 2)) {
+    goto handle_padded_rsa_encrypt_error;
+  }
 
-  //return ciphertext_bn
+  /* append r to encryption element */
+  r = generate_r(r_bit_len);
+  if (!r || !BN_lshift(enc_element, enc_element, r_bit_len) ||
+      !BN_add(enc_element, enc_element, r)) {
+    goto handle_padded_rsa_encrypt_error;
+  }
+
+  /* append 0x02 to encryption element */
+  if (!BN_lshift(enc_element, enc_element, 8) || !BN_add_word(enc_element, 2)) {
+    goto handle_padded_rsa_encrypt_error;
+  }
+
+  /* append m to encryption element */
+  if (!BN_lshift(enc_element, enc_element, m_required_bit_len) ||
+      !BN_add(enc_element, enc_element, m)) {
+    goto handle_padded_rsa_encrypt_error;
+  }
+
+  /* encrypt via modular exponentiation */
+  ciphertext = BN_new();
+  bn_ctx = BN_CTX_new();
+  if (!ciphertext || !bn_ctx ||
+      !BN_mod_exp(ciphertext, enc_element, e, m, bn_ctx)) {
+    goto handle_padded_rsa_encrypt_error;
+  }
+
+  /* free allocated memory */
+  BN_clear_free(enc_element);
+  BN_clear_free(r);
+  BN_CTX_free(bn_ctx);
+
+  return ciphertext;
+
+  handle_padded_rsa_encrypt_error:
+    if (enc_element) BN_clear_free(enc_element);
+    if (r) BN_clear_free(r);
+    if (ciphertext) BN_clear_free(ciphertext);
+    if (bn_ctx) BN_CTX_free(bn_ctx);
+    return NULL;
 }
 
 void print_openssl_err_and_exit()

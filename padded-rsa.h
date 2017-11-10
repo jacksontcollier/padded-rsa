@@ -54,7 +54,8 @@ int calc_d(BIGNUM* d, const BIGNUM* e, const BIGNUM* phi_N, BN_CTX* bn_ctx);
 
 BIGNUM* generate_r(unsigned long num_bits);
 
-BIGNUM* padded_rsa_encrypt(BIGNUM* m, BIGNUM* N, BIGNUM* e);
+BIGNUM* padded_rsa_encrypt(BIGNUM* m, BIGNUM* N, BIGNUM* e,
+                           unsigned long num_bits);
 
 void print_openssl_err_and_exit();
 #endif
