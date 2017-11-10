@@ -48,6 +48,28 @@ RSAKey* gen_RSAKey(int num_bits);
 void print_RSAKey(FILE* fout, unsigned long num_bits, const char* N,
                   const char* key);
 
+typedef struct public_rsa_key
+{
+  BIGNUM* e;
+  BIGNUM* N;
+  unsigned long num_bits;
+} PublicRSAKey;
+
+PublicRSAKey* new_PublicRSAKey();
+
+PublicRSAKey* read_file_PublicRSAKey(FILE* public_key_fin);
+
+typedef struct secret_rsa_key
+{
+  BIGNUM* d;
+  BIGNUM* N;
+  unsigned long num_bits;
+} SecretRSAKey;
+
+SecretRSAKey* new_SecretRSAKey();
+
+SecretRSAKey* read_file_SecretRSAKey(FILE* secret_key_fin);
+
 BIGNUM* calc_phi_N(const BIGNUM* p, const BIGNUM* q, BN_CTX* bn_ctx);
 
 int calc_d(BIGNUM* d, const BIGNUM* e, const BIGNUM* phi_N, BN_CTX* bn_ctx);

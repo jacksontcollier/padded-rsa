@@ -3,12 +3,17 @@
 #include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include <openssl/err.h>
 
 const char* rsa_enc_dec_arg_options = "k:i:o:";
 const char* rsa_keygen_arg_options = "p:s:n:";
 
+void strip_newline(char* s)
+{
+  if (s[strlen(s)-1] == '\n') s[strlen(s)-1] = '\0';
+}
 
 RSAEncDecOptions* new_RSAEncDecOptions()
 {
@@ -196,6 +201,106 @@ void print_RSAKey(FILE* fout, unsigned long num_bits, const char* N,
   fprintf(fout, "%ld\n", num_bits);
   fprintf(fout, "%s\n", N);
   fprintf(fout, "%s\n", key);
+}
+
+PublicRSAKey* new_PublicRSAKey()
+{
+  PublicRSAKey* public_rsa_key = malloc(sizeof(PublicRSAKey));
+
+  if (!public_rsa_key) return NULL;
+
+  public_rsa_key->e = BN_new();
+  public_rsa_key->N = BN_new();
+  public_rsa_key->num_bits = 0;
+
+  if (!public_rsa_key->e || !public_rsa_key->N) {
+    goto handle_new_PublicRSAKey_error;
+  }
+
+  return public_rsa_key;
+
+  handle_new_PublicRSAKey_error:
+    if (public_rsa_key->e) BN_clear_free(public_rsa_key->e);
+    if (public_rsa_key->N) BN_clear_free(public_rsa_key->N);
+    return NULL;
+}
+
+PublicRSAKey* read_file_PublicRSAKey(FILE* public_key_fin)
+{
+  char* num_bits_str = NULL;
+  char* N_str = NULL;
+  char* e_str = NULL;
+  PublicRSAKey* public_rsa_key = NULL;
+
+  getline(&num_bits_str, 0, public_key_fin);
+  getline(&N_str, 0, public_key_fin);
+  getline(&e_str, 0, public_key_fin);
+
+  strip_newline(num_bits_str);
+  strip_newline(N_str);
+  strip_newline(e_str);
+
+  public_rsa_key = new_PublicRSAKey();
+
+  sscanf(num_bits_str, "%ld", &(public_rsa_key->num_bits));
+  BN_dec2bn(&(public_rsa_key->N), N_str);
+  BN_dec2bn(&(public_rsa_key->e), N_str);
+
+  free(num_bits_str);
+  free(N_str);
+  free(e_str);
+
+  return public_rsa_key;
+}
+
+SecretRSAKey* new_SecretRSAKey()
+{
+  SecretRSAKey* secret_rsa_key = malloc(sizeof(SecretRSAKey));
+
+  if (!secret_rsa_key) return NULL;
+
+  secret_rsa_key->d = BN_new();
+  secret_rsa_key->N = BN_new();
+  secret_rsa_key->num_bits = 0;
+
+  if (!secret_rsa_key->d || !secret_rsa_key->N) {
+    goto handle_new_SecretRSAKey_error;
+  }
+
+  return secret_rsa_key;
+
+  handle_new_SecretRSAKey_error:
+    if (secret_rsa_key->d) BN_clear_free(secret_rsa_key->d);
+    if (secret_rsa_key->N) BN_clear_free(secret_rsa_key->N);
+    return NULL;
+}
+
+SecretRSAKey* read_file_SecretRSAKey(FILE* secret_key_fin)
+{
+  char* num_bits_str = NULL;
+  char* N_str = NULL;
+  char* d_str = NULL;
+  SecretRSAKey* secret_rsa_key = NULL;
+
+  getline(&num_bits_str, 0, secret_key_fin);
+  getline(&N_str, 0, secret_key_fin);
+  getline(&d_str, 0, secret_key_fin);
+
+  strip_newline(num_bits_str);
+  strip_newline(N_str);
+  strip_newline(d_str);
+
+  secret_rsa_key = new_SecretRSAKey();
+
+  sscanf(num_bits_str, "%ld", &(secret_rsa_key->num_bits));
+  BN_dec2bn(&(secret_rsa_key->N), N_str);
+  BN_dec2bn(&(secret_rsa_key->d), d_str);
+
+  free(num_bits_str);
+  free(N_str);
+  free(d_str);
+
+  return secret_rsa_key;
 }
 
 BIGNUM* calc_phi_N(const BIGNUM* p, const BIGNUM* q, BN_CTX* bn_ctx)
