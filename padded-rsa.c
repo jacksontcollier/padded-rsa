@@ -230,11 +230,14 @@ PublicRSAKey* read_file_PublicRSAKey(FILE* public_key_fin)
   char* num_bits_str = NULL;
   char* N_str = NULL;
   char* e_str = NULL;
+  size_t num_bits_str_getline_buf_size = 0;
+  size_t N_str_getline_buf_size = 0;
+  size_t e_str_getline_buf_size = 0;
   PublicRSAKey* public_rsa_key = NULL;
 
-  getline(&num_bits_str, 0, public_key_fin);
-  getline(&N_str, 0, public_key_fin);
-  getline(&e_str, 0, public_key_fin);
+  getline(&num_bits_str, &num_bits_str_getline_buf_size, public_key_fin);
+  getline(&N_str, &N_str_getline_buf_size, public_key_fin);
+  getline(&e_str, &e_str_getline_buf_size, public_key_fin);
 
   strip_newline(num_bits_str);
   strip_newline(N_str);
@@ -244,7 +247,7 @@ PublicRSAKey* read_file_PublicRSAKey(FILE* public_key_fin)
 
   sscanf(num_bits_str, "%ld", &(public_rsa_key->num_bits));
   BN_dec2bn(&(public_rsa_key->N), N_str);
-  BN_dec2bn(&(public_rsa_key->e), N_str);
+  BN_dec2bn(&(public_rsa_key->e), e_str);
 
   free(num_bits_str);
   free(N_str);
@@ -280,11 +283,14 @@ SecretRSAKey* read_file_SecretRSAKey(FILE* secret_key_fin)
   char* num_bits_str = NULL;
   char* N_str = NULL;
   char* d_str = NULL;
+  size_t num_bits_str_getline_buf_size = 0;
+  size_t N_str_getline_buf_size = 0;
+  size_t d_str_getline_buf_size = 0;
   SecretRSAKey* secret_rsa_key = NULL;
 
-  getline(&num_bits_str, 0, secret_key_fin);
-  getline(&N_str, 0, secret_key_fin);
-  getline(&d_str, 0, secret_key_fin);
+  getline(&num_bits_str, &num_bits_str_getline_buf_size, secret_key_fin);
+  getline(&N_str, &N_str_getline_buf_size, secret_key_fin);
+  getline(&d_str, &d_str_getline_buf_size, secret_key_fin);
 
   strip_newline(num_bits_str);
   strip_newline(N_str);
@@ -301,6 +307,26 @@ SecretRSAKey* read_file_SecretRSAKey(FILE* secret_key_fin)
   free(d_str);
 
   return secret_rsa_key;
+}
+
+BIGNUM* read_file_bn(FILE *fin)
+{
+  char *bn_str = NULL;
+  size_t bn_str_getline_buf_size = 0;
+  BIGNUM* bn = BN_new();
+
+  getline(&bn_str, &bn_str_getline_buf_size, fin);
+  strip_newline(bn_str);
+  BN_dec2bn(&bn, bn_str);
+
+  free(bn_str);
+
+  return bn;
+}
+
+void write_file_bn(const BIGNUM* bn, FILE* fout)
+{
+  fprintf(fout, "%s\n", BN_bn2dec(bn));
 }
 
 BIGNUM* calc_phi_N(const BIGNUM* p, const BIGNUM* q, BN_CTX* bn_ctx)
@@ -372,24 +398,20 @@ BIGNUM* padded_rsa_encrypt(BIGNUM* m, BIGNUM* N, BIGNUM* e,
   if (!enc_element || !BN_zero(enc_element)) {
     goto handle_padded_rsa_encrypt_error;
   }
-
   /* append 0x02 to encryption element */
-  if (!BN_lshift(enc_element, enc_element, 8) || BN_add_word(enc_element, 2)) {
+  if (!BN_lshift(enc_element, enc_element, 8) || !BN_add_word(enc_element, 2)) {
     goto handle_padded_rsa_encrypt_error;
   }
-
   /* append r to encryption element */
   r = generate_r(r_bit_len);
   if (!r || !BN_lshift(enc_element, enc_element, r_bit_len) ||
       !BN_add(enc_element, enc_element, r)) {
     goto handle_padded_rsa_encrypt_error;
   }
-
-  /* append 0x02 to encryption element */
-  if (!BN_lshift(enc_element, enc_element, 8) || !BN_add_word(enc_element, 2)) {
+  /* append 0x00 to encryption element */
+  if (!BN_lshift(enc_element, enc_element, 8) || !BN_add_word(enc_element, 0)) {
     goto handle_padded_rsa_encrypt_error;
   }
-
   /* append m to encryption element */
   if (!BN_lshift(enc_element, enc_element, m_required_bit_len) ||
       !BN_add(enc_element, enc_element, m)) {
@@ -400,10 +422,9 @@ BIGNUM* padded_rsa_encrypt(BIGNUM* m, BIGNUM* N, BIGNUM* e,
   ciphertext = BN_new();
   bn_ctx = BN_CTX_new();
   if (!ciphertext || !bn_ctx ||
-      !BN_mod_exp(ciphertext, enc_element, e, m, bn_ctx)) {
+      !BN_mod_exp(ciphertext, enc_element, e, N, bn_ctx)) {
     goto handle_padded_rsa_encrypt_error;
   }
-
   /* free allocated memory */
   BN_clear_free(enc_element);
   BN_clear_free(r);
@@ -417,6 +438,19 @@ BIGNUM* padded_rsa_encrypt(BIGNUM* m, BIGNUM* N, BIGNUM* e,
     if (ciphertext) BN_clear_free(ciphertext);
     if (bn_ctx) BN_CTX_free(bn_ctx);
     return NULL;
+}
+
+BIGNUM* padded_rsa_decrypt(BIGNUM* c, BIGNUM* N, BIGNUM* d,
+    unsigned long num_bits)
+{
+  BIGNUM* m_prime = BN_new();
+  BN_CTX* bn_ctx = BN_CTX_new();
+  int m_prime_mask_bit_len = (num_bits / 2) - 24;
+
+  BN_mod_exp(m_prime, c, d, N, bn_ctx);
+  BN_mask_bits(m_prime, m_prime_mask_bit_len);
+
+  return m_prime;
 }
 
 void print_openssl_err_and_exit()
