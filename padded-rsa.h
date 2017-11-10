@@ -45,7 +45,7 @@ void free_RSAKey(RSAKey* rsa_key);
 
 RSAKey* gen_RSAKey(int num_bits);
 
-void print_RSAKey(FILE* fout, unsigned long num_bits, const char* N,
+void write_RSAKey(FILE* fout, unsigned long num_bits, const char* N,
                   const char* key);
 
 typedef struct public_rsa_key

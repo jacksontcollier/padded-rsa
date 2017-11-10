@@ -195,7 +195,7 @@ RSAKey* gen_RSAKey(int num_bits)
     return NULL;
 }
 
-void print_RSAKey(FILE* fout, unsigned long num_bits, const char* N,
+void write_RSAKey(FILE* fout, unsigned long num_bits, const char* N,
                   const char* key)
 {
   fprintf(fout, "%ld\n", num_bits);
