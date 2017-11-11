@@ -115,6 +115,7 @@ void print_RSAKeygenOptions(const RSAKeygenOptions* options)
   printf("number of bits: %ld\n", options->num_bits);
 }
 
+/** CORE FUNCTION **/
 RSAKey* new_RSAKey()
 {
   RSAKey* rsa_key = malloc(sizeof(RSAKey));
@@ -154,7 +155,7 @@ void free_RSAKey(RSAKey* rsa_key)
   }
 }
 
-
+/** CORE FUNCTION **/
 RSAKey* gen_RSAKey(int num_bits)
 {
   RSAKey* rsa_key = new_RSAKey();
@@ -329,6 +330,7 @@ void write_file_bn(const BIGNUM* bn, FILE* fout)
   fprintf(fout, "%s\n", BN_bn2dec(bn));
 }
 
+/** CORE FUNCTION **/
 BIGNUM* calc_phi_N(const BIGNUM* p, const BIGNUM* q, BN_CTX* bn_ctx)
 {
   BIGNUM* p_minus_one = BN_new();
@@ -357,11 +359,13 @@ BIGNUM* calc_phi_N(const BIGNUM* p, const BIGNUM* q, BN_CTX* bn_ctx)
     return NULL;
 }
 
+/** CORE FUNCTION **/
 int calc_d(BIGNUM* d, const BIGNUM* e, const BIGNUM* phi_N, BN_CTX* bn_ctx)
 {
   return BN_mod_inverse(d, e, phi_N, bn_ctx) != NULL;
 }
 
+/** CORE FUNCTION **/
 BIGNUM* generate_r(unsigned long r_num_bits)
 {
   int r_contains_zero_byte = 1;
@@ -383,8 +387,9 @@ BIGNUM* generate_r(unsigned long r_num_bits)
   return r;
 }
 
+/** CORE FUNCTION **/
 BIGNUM* padded_rsa_encrypt(BIGNUM* m, BIGNUM* N, BIGNUM* e,
-                           unsigned long num_bits)
+    unsigned long num_bits)
 {
   size_t r_bit_len = num_bits / 2;
   size_t m_required_bit_len = (num_bits / 2) - 24;
@@ -440,6 +445,7 @@ BIGNUM* padded_rsa_encrypt(BIGNUM* m, BIGNUM* N, BIGNUM* e,
     return NULL;
 }
 
+/** CORE FUNCTION **/
 BIGNUM* padded_rsa_decrypt(BIGNUM* c, BIGNUM* N, BIGNUM* d,
     unsigned long num_bits)
 {
